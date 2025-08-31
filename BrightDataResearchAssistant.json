@@ -1,0 +1,642 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "95cc7e77-99c5-4401-9d42-8595ed658bc4",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        -2976,
+        160
+      ],
+      "webhookId": "telegram-brightdata-webhook",
+      "typeVersion": 1.1,
+      "credentials": {
+        "telegramApi": {
+          "id": "MNun4s73PGgGasZS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=🔍*Researching:* *\"{{ $json.message.text }}\"*  \n\n🤖 *AI Research Assistant is working...*⚡ \n\n*Technology Stack:* \n• *BrightData* - Web scraping \n• *Perplexity AI* - Advanced search \n• *Google Gemini* - AI processing \n• *n8n Automation* - Workflow⏱️\n\nPlease wait while I gather comprehensive information...",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "reply_to_message_id": "={{ $json.message.message_id }}"
+        }
+      },
+      "id": "123bd562-ec0f-4dc4-ba88-2664cdb45e49",
+      "name": "Send Acknowledgment",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -2240,
+        -96
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "3bea7b1d-d0f7-4e8f-b263-1eb4c9047f50",
+      "credentials": {
+        "telegramApi": {
+          "id": "MNun4s73PGgGasZS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "snapshot-id",
+              "name": "snapshot_id",
+              "type": "string",
+              "value": "={{ $json.snapshot_id }}"
+            },
+            {
+              "id": "user-query",
+              "name": "user_query",
+              "type": "string",
+              "value": "={{ $('Telegram Bot Trigger').item.json.message.text }}"
+            },
+            {
+              "id": "chat-id",
+              "name": "chat_id",
+              "type": "string",
+              "value": "={{ $('Telegram Bot Trigger').item.json.message.chat.id }}"
+            },
+            {
+              "id": "message-id",
+              "name": "message_id",
+              "type": "string",
+              "value": "={{ $('Telegram Bot Trigger').item.json.message.message_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "de40fff2-c39c-4163-9eb5-d350183294ff",
+      "name": "Set Snapshot Id",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -1808,
+        -96
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "status-ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ready"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da38c6b8-27c9-49f7-ad90-e3dab1a2b9ab",
+      "name": "Check If Ready",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1360,
+        -96
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "c7e6c2e4-b2e5-4066-a8ba-fad995f1efe5",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        -1360,
+        128
+      ],
+      "webhookId": "wait-for-results-001",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3
+        }
+      },
+      "id": "59f6c3f2-5a1e-4796-8464-8545d08e76b9",
+      "name": "Google Gemini Extractor",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -912,
+        -112
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HoBnv9qIXy6YES5s",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.answer_html || $json.answer_text || $json.answer || $json.result || Object.values($json).find(val => typeof val === 'string' && val.length > 50) || JSON.stringify($json) }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "readable_content",
+              "description": "Extract clean, readable content from HTML, removing all HTML tags and formatting"
+            },
+            {
+              "name": "key_points",
+              "description": "Main key points and important information as bullet points"
+            },
+            {
+              "name": "summary",
+              "description": "Brief summary of the content in 2-3 sentences"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "26e2caf6-99a8-4dc2-a3c6-980b0955dd4a",
+      "name": "Readable Data Extractor",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "position": [
+        -912,
+        -320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-thinking-exp-01-21",
+        "options": {
+          "maxOutputTokens": 1024,
+          "temperature": 0.7
+        }
+      },
+      "id": "44bf5af2-e5d9-4b74-bf0d-8dce021b4dc6",
+      "name": "Google Gemini Summarizer",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -688,
+        -112
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HoBnv9qIXy6YES5s",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 2000,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "cb433a42-6be5-4d47-9278-b8848b37005f",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        -464,
+        -112
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "970a97c5-a5c2-431a-82a2-f9b292f1aaf5",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -576,
+        -448
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operationMode": "documentLoader",
+        "options": {}
+      },
+      "id": "83ae36f4-f427-402a-9f16-ff337eda00b1",
+      "name": "Telegram Response Generator",
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "position": [
+        -240,
+        -320
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Set Snapshot Id').item.json.chat_id }}",
+        "text": "={{ $json.output.readable_content ? $json.output.readable_content : ($json.output.summary ? $json.output.summary : ($json.output.key_points ? $json.output.key_points : 'Here is the research result from your query.')) + '\\n\\n---\\n🤖 Powered by:\\n• BrightData - Web scraping & data collection\\n• Perplexity AI - Advanced search & research\\n• Google Gemini - AI content processing\\n• Telegram Bot - Seamless delivery\\n\\n✨ Advanced AI Research Assistant' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "reply_to_message_id": "={{ $('Set Snapshot Id').item.json.message_id }}"
+        }
+      },
+      "id": "53e4921a-2769-4485-933e-7a4643ee3e13",
+      "name": "Send Telegram Response",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        160,
+        -336
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "23d63e0e-04f4-4bde-85a7-4b3b42f3d09f",
+      "credentials": {
+        "telegramApi": {
+          "id": "MNun4s73PGgGasZS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": false,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "start-command",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "/start"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ed5b8b7c-e0c1-4990-8c49-1c8bdbaed2fc",
+      "name": "Check Start Command",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -2720,
+        -112
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "🤖 **Welcome to BrightData AI Research Assistant!**\n\n🌐 **What I do:**\nI leverage BrightData's powerful web scraping infrastructure to gather real-time information from across the web, then process it using advanced AI to provide you with comprehensive research results.\n\n⚡ **Technology Stack:**\n• **BrightData** - Enterprise web scraping & data collection\n• **Perplexity AI** - Advanced search & research capabilities\n• **Google Gemini** - AI content processing & analysis\n• **n8n Automation** - Seamless workflow orchestration\n\n📝 **How to use:**\nSimply send me any question or research topic, and I'll:\n1. Scrape relevant web data using BrightData\n2. Process it through Perplexity AI\n3. Analyze with Google Gemini\n4. Deliver clean, actionable insights\n\n🚀 **Try asking me about:**\n• Market trends and analysis\n• Technical documentation\n• News and current events\n• Research topics\n• Product comparisons\n\n💡 **Example:** \"What are the latest AI trends in 2025?\"\n\n✨ Ready to start? Send me your research query!",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "reply_to_message_id": "={{ $json.message.message_id }}"
+        }
+      },
+      "id": "a7eab353-3af9-40c4-bcf8-3e6a41b4f0b6",
+      "name": "Send Welcome Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -2464,
+        -304
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "aed697db-a6fb-43eb-9584-0ed22c3f4f57",
+      "credentials": {
+        "telegramApi": {
+          "id": "MNun4s73PGgGasZS",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.brightdata.com/datasets/v3/trigger",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "dataset_id",
+              "value": "gd_m7dhdot1vw9a7gc1n"
+            },
+            {
+              "name": "include_errors",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "=[\n  {\n    \"url\": \"https://www.perplexity.ai\",\n    \"prompt\": \"{{ $('Telegram Bot Trigger').item.json.message.text }}\",\n    \"country\": \"US\"\n  }\n]",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "86d3435c-131d-41c3-bfd2-beeb54395f83",
+      "name": "BrightData Scraper (Perplexity Search Request)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -2016,
+        -96
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "WFw3RcMcbJim7erB",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.brightdata.com/datasets/v3/snapshot/{{ $('Set Snapshot Id').item.json.snapshot_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "cd5acc75-825f-48ab-b793-6b558502fff8",
+      "name": "BrightData Snapshot Download",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1136,
+        -320
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "WFw3RcMcbJim7erB",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.brightdata.com/datasets/v3/progress/{{ $json.snapshot_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "313908ee-0cb1-489f-87b4-13d689c3ab61",
+      "name": "BrightData Snapshot Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1584,
+        -96
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "WFw3RcMcbJim7erB",
+          "name": "Bearer Auth account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Start Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Acknowledgment": {
+      "main": [
+        [
+          {
+            "node": "BrightData Scraper (Perplexity Search Request)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Snapshot Id": {
+      "main": [
+        [
+          {
+            "node": "BrightData Snapshot Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Ready": {
+      "main": [
+        [
+          {
+            "node": "BrightData Snapshot Download",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "BrightData Snapshot Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Extractor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Readable Data Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Readable Data Extractor": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Summarizer": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Telegram Response Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Telegram Response Generator",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Response Generator": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Start Command": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Acknowledgment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrightData Scraper (Perplexity Search Request)": {
+      "main": [
+        [
+          {
+            "node": "Set Snapshot Id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrightData Snapshot Download": {
+      "main": [
+        [
+          {
+            "node": "Readable Data Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BrightData Snapshot Status": {
+      "main": [
+        [
+          {
+            "node": "Check If Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "5059448406f30dd442a3273adf155e3d7ea9f84d5717037f2c0e11842599e183"
+  }
+}
